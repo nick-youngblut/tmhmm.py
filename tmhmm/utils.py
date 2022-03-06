@@ -1,7 +1,9 @@
-from collections import namedtuple
+from collections import defaultdict
+import re
+import sys
 
 
-FastaEntry = namedtuple('FastaEntry', 'id, description, sequence')
+#FastaEntry = namedtuple('FastaEntry', 'id, description, sequence')
 
 
 def load_posterior_file(fileobj):
@@ -30,28 +32,25 @@ def load_fasta_file(fileobj):
     The `description` is everything coming after the first whitespace character
     and does not need to be unique.
     """
-    entries = []
-    header = None
-    sequence_parts = []
-
-    def append_entry(header, sequence_parts, entries):
-        id, description = header.split(None, 1)
-        sequence = ''.join(sequence_parts)
-        entries.append(FastaEntry(id, description, sequence))
-
-        header = None
-        sequence_parts = []
-
+    regex = re.compile('[^A-Za-z0-9-_]+')
+    seqid,decs = None,None
+    seqs = defaultdict(dict)
+    
     for line in fileobj:
         if line.startswith('#'):
             continue
         if line.startswith('>'):
-            if header is None:
-                header = line[1:].strip()
-            else:
-                append_entry(header, sequence_parts, entries)
+            line = line.lstrip('>').rstrip()
+            try:
+                seqid,desc = line.split(None, 1)
+            except ValueError:
+                seqid,desc = line,''
+            seqid = regex.sub('_', seqid.strip())
+            seqs[seqid] = {'desc' : desc}
         else:
-            sequence_parts.append(line.strip())
-    if header is not None:
-        append_entry(header, sequence_parts, entries)
-    return entries
+            line = line.strip().replace('*', '')
+            try:
+                seqs[seqid]['seq'] += line
+            except KeyError :
+                seqs[seqid]['seq'] = line
+    return seqs
