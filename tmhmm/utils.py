@@ -32,7 +32,8 @@ def load_fasta_file(fileobj):
     The `description` is everything coming after the first whitespace character
     and does not need to be unique.
     """
-    regex = re.compile('[^A-Za-z0-9-_]+')
+    regex1 = re.compile(r'[^A-Za-z0-9-_]+')
+    regex2 = re.compile(r'[*.XN-]')
     seqid,decs = None,None
     seqs = defaultdict(dict)
     
@@ -45,10 +46,10 @@ def load_fasta_file(fileobj):
                 seqid,desc = line.split(None, 1)
             except ValueError:
                 seqid,desc = line,''
-            seqid = regex.sub('_', seqid.strip())
+            seqid = regex1.sub('_', seqid.strip())
             seqs[seqid] = {'desc' : desc}
         else:
-            line = line.strip().replace('*', '')
+            line = regex2.sub('', line.strip())
             try:
                 seqs[seqid]['seq'] += line
             except KeyError :
